@@ -1,6 +1,6 @@
 # to-do-it: 積みゲー消化を楽しくサポート！
 
-[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![Mocup1](docs/images/Mocup1.png?raw=true)
 
 ## 概要
 
