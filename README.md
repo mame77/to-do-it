@@ -64,4 +64,5 @@ npm run dev
 - まめ
 
 荒木拓真
+araki
 
