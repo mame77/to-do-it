@@ -63,6 +63,4 @@ npm run dev
 ## 名前の入力
 - まめ
 
-荒木拓真
-araki
-
+- araki
