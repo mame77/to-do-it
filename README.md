@@ -4,7 +4,7 @@
 
 ## 概要
 
-**to-do-it** は、「持っているのにやっていないゲーム（積みゲー）」を楽しく、計画的に消化するためのWebアプリケーションです。
+**to-do-it** は、「持っているのにやっていないゲーム（積みゲー）」を楽しく、計画的に消化するための Web アプリケーションです。
 
 「いつかやろう」で放置されがちな積みゲーに光を当て、ゲームをプレイする**「きっかけ」**と**「モチベーション」**を提供します。
 
@@ -20,47 +20,52 @@
 
 ## 主な機能
 
-to-do-itは、ユーザーのゲーム体験を**「登録」**から**「完了」**までサポートします。
+to-do-it は、ユーザーのゲーム体験を**「登録」**から**「完了」**までサポートします。
 
 1.  **ゲーム登録機能**:
-    * Steamなどのプラットフォームから、未プレイのゲーム情報を簡単に登録できます。
+    - Steam などのプラットフォームから、未プレイのゲーム情報を簡単に登録できます。
 2.  **自動タスク作成**:
-    * 登録されたゲームを基に、プレイを促す**タスク（予定）を自動でカレンダーに作成**します。
+    - 登録されたゲームを基に、プレイを促す**タスク（予定）を自動でカレンダーに作成**します。
 3.  **進捗管理とフラグ変更**:
-    * 感想やメモを入力することで、ゲームのステータスが**「放置」から「プレイ中」へ**自動的に変更されます。
+    - 感想やメモを入力することで、ゲームのステータスが**「放置」から「プレイ中」へ**自動的に変更されます。
 4.  **完了報告**:
-    * ゲームを最後までプレイし終えたら**「終了フラグ」**を押して完了報告ができます。
+    - ゲームを最後までプレイし終えたら**「終了フラグ」**を押して完了報告ができます。
 5.  **モチベーション維持のためのポイントシステム**:
-    * ゲームをプレイすると**ポイントが増加**し、サボると**ポイントが減少**する独自の仕組みで、継続的なプレイを促します。
+    - ゲームをプレイすると**ポイントが増加**し、サボると**ポイントが減少**する独自の仕組みで、継続的なプレイを促します。
 
 ---
 
 ## 開発技術・環境 (Tech Stack)
 
-* **PRD (製品要求仕様書)**: [Google Docs Link](https://docs.google.com/document/d/16wpL3tjqGaISxNi7bhJGFIuXZQ4QPkah_DnWDZUj6tM/edit?usp=sharing)
-* **Design Doc (設計書)**: [Google Docs Link](https://docs.google.com/document/d/1wop1wOzuo468klP4mzotCC5TFcmPwDnRUS1zYHJOJ5E/edit?usp=sharing)
+- **PRD (製品要求仕様書)**: [Google Docs Link](https://docs.google.com/document/d/16wpL3tjqGaISxNi7bhJGFIuXZQ4QPkah_DnWDZUj6tM/edit?usp=sharing)
+- **Design Doc (設計書)**: [Google Docs Link](https://docs.google.com/document/d/1wop1wOzuo468klP4mzotCC5TFcmPwDnRUS1zYHJOJ5E/edit?usp=sharing)
 
 ## 環境構築
 
 1. リポジトリのクローン
+
 ```
 git clone git@github.com:mame77/to-do-it.git
 ```
+
 ```
 cd to-do-it
 ```
 
 2. 依存関係のインストール
+
 ```
 npm install
 ```
 
 3. アプリケーションの起動
+
 ```
 npm run dev
 ```
 
 ## 名前の入力
-- まめ
 
+- まめ
+- 森川
 - araki
