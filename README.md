@@ -62,5 +62,7 @@ npm run dev
 
 ## 名前の入力
 - まめ
+- morikawa
+- araki
 - のがわ
 
