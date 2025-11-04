@@ -62,6 +62,5 @@ npm run dev
 
 ## 名前の入力
 - まめ
-- ひろはた
-
-
+- morikawa
+- araki
