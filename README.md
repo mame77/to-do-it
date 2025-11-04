@@ -64,5 +64,3 @@ npm run dev
 - まめ
 - morikawa
 - araki
-- のがわ
-
