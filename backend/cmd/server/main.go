@@ -11,8 +11,8 @@ import (
 	"TO-DO-IT/internal/calendar"
 	"TO-DO-IT/internal/score"
 
-	// 担当Cのパッケージ (仮)
-	"TO-DO-IT/internal/game"
+	// 担当Cのパッケージ
+	"TO-DO-IT/internal/game" // ← インポートを確認
 	// ... (他に必要なパッケージ)
 )
 
@@ -28,7 +28,7 @@ func main() {
 
 	// --- 依存関係の構築 (DI) ---
 	// 各担当のリポジトリを初期化
-	gameRepo := game.NewRepository(db)         // 担当C
+	gameRepo := game.NewRepository(db)     // 担当C
 	calendarRepo := calendar.NewRepository(db) // 担当A
 	scoreRepo := score.NewRepository(db)       // 担当A
 	// ... (taskRepoなど)
@@ -36,12 +36,14 @@ func main() {
 	// 各担当のサービスを初期化
 	// (担当Aのcalendarサービスは、担当Cのgameリポジトリが必要)
 	calendarSvc := calendar.NewService(calendarRepo, gameRepo) // 担当A
-	scoreSvc := score.NewService(scoreRepo)                    // 担当A
-	// ... (gameSvcなど)
+	scoreSvc := score.NewService(scoreRepo)                     // 担当A
+	
+	// ★↓↓↓ 担当Cのサービスを初期化 (コメントアウト解除) ↓↓↓
+	gameSvc := game.NewService(gameRepo) 
 
 	// 各担当のハンドラを初期化
 	calendarHandler := calendar.NewHandler(calendarSvc) // 担当A
-	scoreHandler := score.NewHandler(scoreSvc)          // D担A
+	scoreHandler := score.NewHandler(scoreSvc)          // 担当D
 	// ... (gameHandlerなど)
 
 	// --- Echoサーバーのセットアップ ---
