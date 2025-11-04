@@ -1,30 +1,41 @@
 package score
 
-import "database/sql"
+import (
+	"TO-DO-IT/internal/db" // (main.goで定義するDB)
+)
 
+// Repository ... データベース（今回はインメモリDB）とのインターフェース
 type Repository interface {
-	GetMotivationByUserID(userID string) (*Motivation, error)
-	UpdateMotivation(motivation *Motivation) error
+	GetMotivationByUserID(userID string) (Motivation, error)
+	UpsertMotivation(motivation Motivation) error
 }
 
-type postgresRepository struct {
-	db *sql.DB
+type inMemoryRepository struct {
+	db *db.MemoryDB
 }
 
-func NewRepository(db *sql.DB) Repository {
-	return &postgresRepository{db: db}
+func NewRepository(db *db.MemoryDB) Repository {
+	return &inMemoryRepository{db: db}
 }
 
-func (r *postgresRepository) GetMotivationByUserID(userID string) (*Motivation, error) {
-	// TODO: DBからユーザーのモチベーション情報を取得 [cite: 79]
-	// SELECT points, rank, level FROM user_motivation WHERE user_id = $1
-	motivation := &Motivation{UserID: userID}
-	// ... (db.QueryRowContext...)
-	return motivation, nil
+// GetMotivationByUserID ... モチベーション情報を取得
+func (r *inMemoryRepository) GetMotivationByUserID(userID string) (Motivation, error) {
+	r.db.RWMutex.RLock()
+	defer r.db.RWMutex.RUnlock()
+
+	m, exists := r.db.Motivations[userID]
+	if !exists {
+		// 存在しない場合はデフォルト値を返す
+		return Motivation{UserID: userID, Points: 0, Rank: "ブロンズ", Level: 0}, nil
+	}
+	return m, nil
 }
 
-func (r *postgresRepository) UpdateMotivation(motivation *Motivation) error {
-	// TODO: DBのモチベーション情報を更新 [cite: 77-78]
-	// UPDATE user_motivation SET points = $1, rank = $2, level = $3 WHERE user_id = $4
+// UpsertMotivation ... モチベーション情報を更新 (なければ作成)
+func (r *inMemoryRepository) UpsertMotivation(motivation Motivation) error {
+	r.db.RWMutex.Lock()
+	defer r.db.RWMutex.Unlock()
+
+	r.db.Motivations[motivation.UserID] = motivation
 	return nil
 }

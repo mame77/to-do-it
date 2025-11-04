@@ -1,67 +1,101 @@
 package calendar
 
 import (
-	"database/sql"
-	"time"
+	"TO-DO-IT/internal/db" // (main.goで定義するDB)
 )
 
-// Repository (インターフェース)
+// Repository ... データベース（今回はインメモリDB）とのインターフェース
 type Repository interface {
-	// 固定予定 (FixedEvent)
-	GetFixedEventsByUserID(userID string, start time.Time, end time.Time) ([]FixedEvent, error)
+	GetFixedEventsByUserID(userID string) ([]FixedEvent, error)
 	CreateFixedEvent(event *FixedEvent) error
-	// ... (UpdateFixedEvent, DeleteFixedEvent も必要) [cite: 83-84]
-
-	// スケジュール (Schedule)
-	GetSchedulesByUserID(userID string, start time.Time, end time.Time) ([]Schedule, error)
+	GetSchedulesByUserID(userID string) ([]Schedule, error)
 	CreateSchedules(schedules []Schedule) error
-	UpdateScheduleStatus(scheduleID string, status string) error // [cite: 73]
+	UpdateScheduleStatus(scheduleID string, status ScheduleStatus) (*Schedule, error)
+	DeleteSchedulesByUserID(userID string) error
 }
 
-// postgresRepository (実装)
-type postgresRepository struct {
-	db *sql.DB
+type inMemoryRepository struct {
+	db *db.MemoryDB
 }
 
-// NewRepository ... DB接続を受け取り、リポジトリを初期化
-func NewRepository(db *sql.DB) Repository {
-	return &postgresRepository{db: db}
+func NewRepository(db *db.MemoryDB) Repository {
+	return &inMemoryRepository{db: db}
 }
 
-// --- 固定予定 (FixedEvent) の実装 ---
+// --- FixedEvent (固定予定) ---
+func (r *inMemoryRepository) GetFixedEventsByUserID(userID string) ([]FixedEvent, error) {
+	r.db.RWMutex.RLock()
+	defer r.db.RWMutex.RUnlock()
 
-func (r *postgresRepository) GetFixedEventsByUserID(userID string, start time.Time, end time.Time) ([]FixedEvent, error) {
-	// TODO: DBから固定予定を取得するSQLクエリを実装
-	// SELECT * FROM fixed_events WHERE user_id = $1 AND start_time < $2 AND end_time > $3
 	var events []FixedEvent
-	// ... (db.QueryContext...)
+	for _, event := range r.db.FixedEvents {
+		if event.UserID == userID {
+			events = append(events, event)
+		}
+	}
 	return events, nil
 }
 
-func (r *postgresRepository) CreateFixedEvent(event *FixedEvent) error {
-	// TODO: DBに固定予定を保存するSQLクエリを実装 [cite: 81]
-	// INSERT INTO fixed_events (...) VALUES (...)
+func (r *inMemoryRepository) CreateFixedEvent(event *FixedEvent) error {
+	r.db.RWMutex.Lock()
+	defer r.db.RWMutex.Unlock()
+
+	if _, exists := r.db.FixedEvents[event.ID]; exists {
+		return db.ErrAlreadyExists
+	}
+	r.db.FixedEvents[event.ID] = *event
 	return nil
 }
 
-// --- スケジュール (Schedule) の実装 ---
+// --- Schedule (自動生成スケジュール) ---
+func (r *inMemoryRepository) GetSchedulesByUserID(userID string) ([]Schedule, error) {
+	r.db.RWMutex.RLock()
+	defer r.db.RWMutex.RUnlock()
 
-func (r *postgresRepository) GetSchedulesByUserID(userID string, start time.Time, end time.Time) ([]Schedule, error) {
-	// TODO: DBから生成済みスケジュールを取得するSQLクエリを実装 [cite: 72]
-	// SELECT * FROM schedules WHERE user_id = $1 AND start_time < $2 AND end_time > $3
 	var schedules []Schedule
-	// ... (db.QueryContext...)
+	for _, s := range r.db.Schedules {
+		if s.UserID == userID {
+			schedules = append(schedules, s)
+		}
+	}
+	// (ソート処理を追加するのが望ましい)
 	return schedules, nil
 }
 
-func (r *postgresRepository) CreateSchedules(schedules []Schedule) error {
-	// TODO: DBに複数のスケジュールを保存するSQLクエリを実装 (トランザクション推奨)
-	// INSERT INTO schedules (...) VALUES (...)
+// CreateSchedules ... 複数のスケジュールを一括登録
+func (r *inMemoryRepository) CreateSchedules(schedules []Schedule) error {
+	r.db.RWMutex.Lock()
+	defer r.db.RWMutex.Unlock()
+
+	for _, s := range schedules {
+		r.db.Schedules[s.ID] = s
+	}
 	return nil
 }
 
-func (r *postgresRepository) UpdateScheduleStatus(scheduleID string, status string) error {
-	// TODO: DBのスケジュールステータスを更新するSQLクエリを実装 [cite: 73]
-	// UPDATE schedules SET status = $1 WHERE id = $2
+// UpdateScheduleStatus ... スケジュールの進捗を更新
+func (r *inMemoryRepository) UpdateScheduleStatus(scheduleID string, status ScheduleStatus) (*Schedule, error) {
+	r.db.RWMutex.Lock()
+	defer r.db.RWMutex.Unlock()
+
+	s, exists := r.db.Schedules[scheduleID]
+	if !exists {
+		return nil, db.ErrNotFound
+	}
+	s.Status = status
+	r.db.Schedules[scheduleID] = s
+	return &s, nil
+}
+
+// DeleteSchedulesByUserID ... ユーザーの既存スケジュールを全削除 (自動生成の前に呼ぶ)
+func (r *inMemoryRepository) DeleteSchedulesByUserID(userID string) error {
+	r.db.RWMutex.Lock()
+	defer r.db.RWMutex.Unlock()
+
+	for id, s := range r.db.Schedules {
+		if s.UserID == userID {
+			delete(r.db.Schedules, id)
+		}
+	}
 	return nil
 }
