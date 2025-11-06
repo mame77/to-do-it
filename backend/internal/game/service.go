@@ -2,20 +2,19 @@ package game
 
 import (
 	"log"
-	"time"
 )
 
 // testUserID は認証をスキップするための仮のユーザーID
-const testUserID = 1 
+const testUserID = "user_123"
 
 // Service は、game のビジネスロジックに関するインターフェースです。
 type Service interface {
-	// 認証がないため、UserIDはサービス内で固定値(1)を使います
+	// 認証がないため、UserIDはサービス内で固定値を使います
 	CreateGame(req *CreateGameRequest) (*Game, error)
-	GetGame(id int) (*Game, error)
-	GetGames() ([]*Game, error) // UserIDを引数に取らず、固定値(1)で検索
-	UpdateGame(id int, req *UpdateGameRequest) (*Game, error)
-	DeleteGame(id int) error
+	GetGame(id string) (*Game, error)
+	GetGames() ([]*Game, error) // UserIDを引数に取らず、固定値で検索
+	UpdateGame(id string, req *UpdateGameRequest) (*Game, error)
+	DeleteGame(id string) error
 }
 
 // service は Service インターフェースの具体的な実装です。
@@ -58,12 +57,12 @@ func (s *service) CreateGame(req *CreateGameRequest) (*Game, error) {
 		log.Printf("Service: Error fetching created game: %v", err)
 		return nil, err
 	}
-	
+
 	return createdGame, nil
 }
 
 // GetGame は ID でゲームを1件取得します。
-func (s *service) GetGame(id int) (*Game, error) {
+func (s *service) GetGame(id string) (*Game, error) {
 	game, err := s.repo.GetGameByID(id)
 	if err != nil {
 		log.Printf("Service: Error getting game by ID: %v", err)
@@ -94,7 +93,7 @@ func (s *service) GetGames() ([]*Game, error) {
 }
 
 // UpdateGame はゲーム情報を更新します。
-func (s *service) UpdateGame(id int, req *UpdateGameRequest) (*Game, error) {
+func (s *service) UpdateGame(id string, req *UpdateGameRequest) (*Game, error) {
 	// 1. まず対象のゲームが存在するか確認
 	game, err := s.repo.GetGameByID(id)
 	if err != nil {
@@ -124,12 +123,12 @@ func (s *service) UpdateGame(id int, req *UpdateGameRequest) (*Game, error) {
 		log.Printf("Service: Error updating game: %v", err)
 		return nil, err
 	}
-	
+
 	return game, nil
 }
 
 // DeleteGame は ID を指定してゲームを削除します。
-func (s *service) DeleteGame(id int) error {
+func (s *service) DeleteGame(id string) error {
 	// 1. まず対象のゲームが存在するか確認（しなくてもDBエラーにはなるが、権限チェックのため）
 	game, err := s.repo.GetGameByID(id)
 	if err != nil {
@@ -138,11 +137,11 @@ func (s *service) DeleteGame(id int) error {
 	if game == nil {
 		return nil // 削除対象が見つからない（エラーではない）
 	}
-	
+
 	// TODO: 本来はここで「取得した game.UserID」と「認証ユーザーID」が一致するかチェックする
 	// if game.UserID != testUserID {
 	// 	return errors.New("forbidden") // 他人のゲーム
 	// }
-
 	// 2. 削除実行
 	return s.repo.DeleteGame(id)
+}

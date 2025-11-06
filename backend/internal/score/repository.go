@@ -1,30 +1,33 @@
 package score
 
-import "database/sql"
+import "github.com/mame77/to-do-it/backend/internal/db"
 
 type Repository interface {
 	GetMotivationByUserID(userID string) (*Motivation, error)
 	UpdateMotivation(motivation *Motivation) error
 }
 
-type postgresRepository struct {
-	db *sql.DB
+type memoryRepository struct {
+	db *db.MemoryDB
 }
 
-func NewRepository(db *sql.DB) Repository {
-	return &postgresRepository{db: db}
+func NewRepository(mdb *db.MemoryDB) Repository {
+	return &memoryRepository{db: mdb}
 }
 
-func (r *postgresRepository) GetMotivationByUserID(userID string) (*Motivation, error) {
-	// TODO: DBからユーザーのモチベーション情報を取得 [cite: 79]
-	// SELECT points, rank, level FROM user_motivation WHERE user_id = $1
-	motivation := &Motivation{UserID: userID}
-	// ... (db.QueryRowContext...)
-	return motivation, nil
+func (r *memoryRepository) GetMotivationByUserID(userID string) (*Motivation, error) {
+	r.db.RWMutex.RLock()
+	defer r.db.RWMutex.RUnlock()
+	m, ok := r.db.Motivations[userID]
+	if !ok {
+		return nil, nil
+	}
+	return &m, nil
 }
 
-func (r *postgresRepository) UpdateMotivation(motivation *Motivation) error {
-	// TODO: DBのモチベーション情報を更新 [cite: 77-78]
-	// UPDATE user_motivation SET points = $1, rank = $2, level = $3 WHERE user_id = $4
+func (r *memoryRepository) UpdateMotivation(motivation *Motivation) error {
+	r.db.RWMutex.Lock()
+	defer r.db.RWMutex.Unlock()
+	r.db.Motivations[motivation.UserID] = *motivation
 	return nil
 }

@@ -1,8 +1,10 @@
 package calendar
 
 import (
-	"TO-DO-IT/internal/game" // 担当Cのゲームパッケージ (仮)
 	"time"
+
+	"github.com/mame77/to-do-it/backend/internal/game" // 担当Cのゲームパッケージ (仮)
+	"github.com/mame77/to-do-it/backend/internal/score"
 )
 
 // Service (インターフェース)
@@ -24,13 +26,15 @@ type Service interface {
 type service struct {
 	calendarRepo Repository
 	gameRepo     game.Repository // 担当Cのゲームリポジトリ (仮)
+	scoreSvc     score.Service
 }
 
 // NewService ... 必要なリポジトリを受け取り、サービスを初期化
-func NewService(calRepo Repository, gameRepo game.Repository) Service {
+func NewService(calRepo Repository, gameRepo game.Repository, scoreSvc score.Service) Service {
 	return &service{
 		calendarRepo: calRepo,
 		gameRepo:     gameRepo,
+		scoreSvc:     scoreSvc,
 	}
 }
 

@@ -3,7 +3,6 @@ package game
 import (
 	"log"
 	"net/http"
-	"strconv" // URLのIDを数値に変換するため
 
 	"github.com/labstack/echo/v4" // ★GinからEchoに変更
 )
@@ -11,7 +10,7 @@ import (
 // Handler は、game のHTTPリクエスト処理に関するインターフェースです。
 type Handler interface {
 	RegisterRoutes(apiGroup *echo.Group) // ★引数を *echo.Group に変更
-	CreateGame(c echo.Context) error      // ★戻り値に error を追加
+	CreateGame(c echo.Context) error     // ★戻り値に error を追加
 	GetGames(c echo.Context) error
 	GetGameByID(c echo.Context) error
 	UpdateGame(c echo.Context) error
@@ -32,33 +31,29 @@ func NewHandler(svc Service) Handler {
 func (h *handler) RegisterRoutes(apiGroup *echo.Group) { // ★引数を *echo.Group に変更
 	gameRoutes := apiGroup.Group("/games") // /api/games がベースになる
 	{
-		gameRoutes.POST("", h.CreateGame)     // POST /api/games
-		gameRoutes.GET("", h.GetGames)       // GET /api/games
-		gameRoutes.GET("/:id", h.GetGameByID) // GET /api/games/:id
-		gameRoutes.PUT("/:id", h.UpdateGame)  // PUT /api/games/:id
+		gameRoutes.POST("", h.CreateGame)       // POST /api/games
+		gameRoutes.GET("", h.GetGames)          // GET /api/games
+		gameRoutes.GET("/:id", h.GetGameByID)   // GET /api/games/:id
+		gameRoutes.PUT("/:id", h.UpdateGame)    // PUT /api/games/:id
 		gameRoutes.DELETE("/:id", h.DeleteGame) // DELETE /api/games/:id
 	}
 }
 
 // --- 個々のハンドラ実装 (Echo形式) ---
 
-// getIDParam は URL から :id を数値として取得するヘルパー関数
-func getIDParam(c echo.Context) (int, error) {
-	idStr := c.Param("id")
-	id, err := strconv.Atoi(idStr)
-	if err != nil {
-		log.Printf("Handler: Invalid ID parameter: %s", idStr)
-		// Echoではエラーを返す
-		return 0, echo.NewHTTPError(http.StatusBadRequest, "Invalid ID format")
+// getIDParam は URL から :id をそのまま取得するヘルパー関数
+func getIDParam(c echo.Context) (string, error) {
+	id := c.Param("id")
+	if id == "" {
+		return "", echo.NewHTTPError(http.StatusBadRequest, "Missing ID parameter")
 	}
 	return id, nil
 }
 
-
 // CreateGame は新しいゲームを作成します (POST /api/games)
 func (h *handler) CreateGame(c echo.Context) error {
 	var req CreateGameRequest
-	
+
 	// 1. リクエストボディ(JSON)を req 構造体にバインド
 	// Echoでは c.Bind() を使う
 	if err := c.Bind(&req); err != nil {
@@ -86,7 +81,6 @@ func (h *handler) GetGames(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, games)
 }
-
 
 // GetGameByID は ID でゲームを1件取得します (GET /api/games/:id)
 func (h *handler) GetGameByID(c echo.Context) error {
@@ -126,7 +120,7 @@ func (h *handler) UpdateGame(c echo.Context) error {
 		log.Printf("Handler: Error updating game: %v", err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": "Failed to update game"})
 	}
-	
+
 	if game == nil {
 		return c.JSON(http.StatusNotFound, map[string]string{"error": "Game not found to update"})
 	}

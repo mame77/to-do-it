@@ -1,8 +1,9 @@
 package calendar
 
 import (
-	"database/sql"
 	"time"
+
+	"github.com/mame77/to-do-it/backend/internal/db"
 )
 
 // Repository (インターフェース)
@@ -10,58 +11,71 @@ type Repository interface {
 	// 固定予定 (FixedEvent)
 	GetFixedEventsByUserID(userID string, start time.Time, end time.Time) ([]FixedEvent, error)
 	CreateFixedEvent(event *FixedEvent) error
-	// ... (UpdateFixedEvent, DeleteFixedEvent も必要) [cite: 83-84]
 
 	// スケジュール (Schedule)
 	GetSchedulesByUserID(userID string, start time.Time, end time.Time) ([]Schedule, error)
 	CreateSchedules(schedules []Schedule) error
-	UpdateScheduleStatus(scheduleID string, status string) error // [cite: 73]
+	UpdateScheduleStatus(scheduleID string, status string) error
 }
 
-// postgresRepository (実装)
-type postgresRepository struct {
-	db *sql.DB
+// memoryRepository is an in-memory implementation using db.MemoryDB
+type memoryRepository struct {
+	db *db.MemoryDB
 }
 
-// NewRepository ... DB接続を受け取り、リポジトリを初期化
-func NewRepository(db *sql.DB) Repository {
-	return &postgresRepository{db: db}
+// NewRepository ... initialize repository with in-memory DB
+func NewRepository(mdb *db.MemoryDB) Repository {
+	return &memoryRepository{db: mdb}
 }
 
-// --- 固定予定 (FixedEvent) の実装 ---
-
-func (r *postgresRepository) GetFixedEventsByUserID(userID string, start time.Time, end time.Time) ([]FixedEvent, error) {
-	// TODO: DBから固定予定を取得するSQLクエリを実装
-	// SELECT * FROM fixed_events WHERE user_id = $1 AND start_time < $2 AND end_time > $3
+func (r *memoryRepository) GetFixedEventsByUserID(userID string, start time.Time, end time.Time) ([]FixedEvent, error) {
+	r.db.RWMutex.RLock()
+	defer r.db.RWMutex.RUnlock()
 	var events []FixedEvent
-	// ... (db.QueryContext...)
+	for _, e := range r.db.FixedEvents {
+		if e.UserID == userID && e.StartTime.Before(end) && e.EndTime.After(start) {
+			events = append(events, e)
+		}
+	}
 	return events, nil
 }
 
-func (r *postgresRepository) CreateFixedEvent(event *FixedEvent) error {
-	// TODO: DBに固定予定を保存するSQLクエリを実装 [cite: 81]
-	// INSERT INTO fixed_events (...) VALUES (...)
+func (r *memoryRepository) CreateFixedEvent(event *FixedEvent) error {
+	r.db.RWMutex.Lock()
+	defer r.db.RWMutex.Unlock()
+	r.db.FixedEvents[event.ID] = *event
 	return nil
 }
 
-// --- スケジュール (Schedule) の実装 ---
-
-func (r *postgresRepository) GetSchedulesByUserID(userID string, start time.Time, end time.Time) ([]Schedule, error) {
-	// TODO: DBから生成済みスケジュールを取得するSQLクエリを実装 [cite: 72]
-	// SELECT * FROM schedules WHERE user_id = $1 AND start_time < $2 AND end_time > $3
+func (r *memoryRepository) GetSchedulesByUserID(userID string, start time.Time, end time.Time) ([]Schedule, error) {
+	r.db.RWMutex.RLock()
+	defer r.db.RWMutex.RUnlock()
 	var schedules []Schedule
-	// ... (db.QueryContext...)
+	for _, s := range r.db.Schedules {
+		if s.UserID == userID && s.StartTime.Before(end) && s.EndTime.After(start) {
+			schedules = append(schedules, s)
+		}
+	}
 	return schedules, nil
 }
 
-func (r *postgresRepository) CreateSchedules(schedules []Schedule) error {
-	// TODO: DBに複数のスケジュールを保存するSQLクエリを実装 (トランザクション推奨)
-	// INSERT INTO schedules (...) VALUES (...)
+func (r *memoryRepository) CreateSchedules(schedules []Schedule) error {
+	r.db.RWMutex.Lock()
+	defer r.db.RWMutex.Unlock()
+	for _, s := range schedules {
+		r.db.Schedules[s.ID] = s
+	}
 	return nil
 }
 
-func (r *postgresRepository) UpdateScheduleStatus(scheduleID string, status string) error {
-	// TODO: DBのスケジュールステータスを更新するSQLクエリを実装 [cite: 73]
-	// UPDATE schedules SET status = $1 WHERE id = $2
+func (r *memoryRepository) UpdateScheduleStatus(scheduleID string, status string) error {
+	r.db.RWMutex.Lock()
+	defer r.db.RWMutex.Unlock()
+	s, ok := r.db.Schedules[scheduleID]
+	if !ok {
+		return nil
+	}
+	s.Status = status
+	r.db.Schedules[scheduleID] = s
 	return nil
 }
