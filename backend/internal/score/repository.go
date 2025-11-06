@@ -1,41 +1,33 @@
 package score
 
-import (
-	"TO-DO-IT/internal/db" // (main.goで定義するDB)
-)
+import "github.com/mame77/to-do-it/backend/internal/db"
 
-// Repository ... データベース（今回はインメモリDB）とのインターフェース
 type Repository interface {
-	GetMotivationByUserID(userID string) (Motivation, error)
-	UpsertMotivation(motivation Motivation) error
+	GetMotivationByUserID(userID string) (*Motivation, error)
+	UpdateMotivation(motivation *Motivation) error
 }
 
-type inMemoryRepository struct {
+type memoryRepository struct {
 	db *db.MemoryDB
 }
 
-func NewRepository(db *db.MemoryDB) Repository {
-	return &inMemoryRepository{db: db}
+func NewRepository(mdb *db.MemoryDB) Repository {
+	return &memoryRepository{db: mdb}
 }
 
-// GetMotivationByUserID ... モチベーション情報を取得
-func (r *inMemoryRepository) GetMotivationByUserID(userID string) (Motivation, error) {
+func (r *memoryRepository) GetMotivationByUserID(userID string) (*Motivation, error) {
 	r.db.RWMutex.RLock()
 	defer r.db.RWMutex.RUnlock()
-
-	m, exists := r.db.Motivations[userID]
-	if !exists {
-		// 存在しない場合はデフォルト値を返す
-		return Motivation{UserID: userID, Points: 0, Rank: "ブロンズ", Level: 0}, nil
+	m, ok := r.db.Motivations[userID]
+	if !ok {
+		return nil, nil
 	}
-	return m, nil
+	return &m, nil
 }
 
-// UpsertMotivation ... モチベーション情報を更新 (なければ作成)
-func (r *inMemoryRepository) UpsertMotivation(motivation Motivation) error {
+func (r *memoryRepository) UpdateMotivation(motivation *Motivation) error {
 	r.db.RWMutex.Lock()
 	defer r.db.RWMutex.Unlock()
-
-	r.db.Motivations[motivation.UserID] = motivation
+	r.db.Motivations[motivation.UserID] = *motivation
 	return nil
 }

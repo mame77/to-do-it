@@ -1,11 +1,10 @@
 package db
 
 import (
-	"TO-DO-IT/internal/calendar"
-	"TO-DO-IT/internal/game"
-	"TO-DO-IT/internal/score"
 	"errors"
 	"sync"
+
+	"github.com/mame77/to-do-it/backend/internal/model"
 )
 
 var (
@@ -16,17 +15,17 @@ var (
 // MemoryDB ... アプリケーションのインメモリデータベース
 type MemoryDB struct {
 	RWMutex     sync.RWMutex
-	Games       map[string]game.Game           // key: GameID
-	FixedEvents map[string]calendar.FixedEvent // key: EventID
-	Schedules   map[string]calendar.Schedule   // key: ScheduleID
-	Motivations map[string]score.Motivation    // key: UserID
+	Games       map[string]model.Game       // key: GameID
+	FixedEvents map[string]model.FixedEvent // key: EventID
+	Schedules   map[string]model.Schedule   // key: ScheduleID
+	Motivations map[string]model.Motivation // key: UserID
 }
 
 func NewMemoryDB() *MemoryDB {
 	return &MemoryDB{
-		Games:       make(map[string]game.Game),
-		FixedEvents: make(map[string]calendar.FixedEvent),
-		Schedules:   make(map[string]calendar.Schedule),
-		Motivations: make(map[string]score.Motivation),
+		Games:       make(map[string]model.Game),
+		FixedEvents: make(map[string]model.FixedEvent),
+		Schedules:   make(map[string]model.Schedule),
+		Motivations: make(map[string]model.Motivation),
 	}
 }

@@ -2,12 +2,13 @@ package main
 
 import (
 	// ヘルパー
-	"TO-DO-IT/internal/calendar" // 担当A
-	"TO-DO-IT/internal/db"       // インメモリDB
-	"TO-DO-IT/internal/game"     // 担当C
-	"TO-DO-IT/internal/score"    // 担当A
 	"log"
 	"time"
+
+	"github.com/mame77/to-do-it/backend/internal/calendar" // 担当A
+	"github.com/mame77/to-do-it/backend/internal/db"       // インメモリDB
+	"github.com/mame77/to-do-it/backend/internal/game"     // 担当C
+	"github.com/mame77/to-do-it/backend/internal/score"    // 担当A
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -64,15 +65,9 @@ func seedData(mdb *db.MemoryDB) {
 	userID := "user_123"
 
 	// 担当C: 所持ゲーム
-	game1 := game.Game{
-		ID: "game_001", UserID: userID, Title: "伝説のRPG", Status: game.StatusPending,
-	}
-	game2 := game.Game{
-		ID: "game_002", UserID: userID, Title: "サイバーパンクADV", Status: game.StatusPending,
-	}
-	game3 := game.Game{
-		ID: "game_003", UserID: userID, Title: "宇宙ストラテジー", Status: game.StatusCleared,
-	}
+	game1 := game.Game{ID: "game_001", UserID: userID, Title: "伝説のRPG"}
+	game2 := game.Game{ID: "game_002", UserID: userID, Title: "サイバーパンクADV"}
+	game3 := game.Game{ID: "game_003", UserID: userID, Title: "宇宙ストラテジー"}
 	mdb.Games[game1.ID] = game1
 	mdb.Games[game2.ID] = game2
 	mdb.Games[game3.ID] = game3

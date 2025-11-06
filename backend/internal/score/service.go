@@ -1,52 +1,47 @@
 package score
 
-// Service ... ビジネスロジック
+// Service (インターフェース)
 type Service interface {
-	GetMotivation(userID string) (Motivation, error)
-	ReportPlayResult(userID string, result PlayResult) (Motivation, error)
+	GetMotivation(userID string) (*Motivation, error)
+	ReportPlayResult(userID string, result PlayResult) (*Motivation, error) // [cite: 76]
 }
 
 type service struct {
 	repo Repository
+	// taskRepo task.Repository // (もしプレイセッション[cite: 96-101]の保存が必要なら)
 }
 
 func NewService(repo Repository) Service {
 	return &service{repo: repo}
 }
 
-func (s *service) GetMotivation(userID string) (Motivation, error) {
+func (s *service) GetMotivation(userID string) (*Motivation, error) {
 	return s.repo.GetMotivationByUserID(userID)
 }
 
-[cite_start]// ReportPlayResult ... プレイ結果を反映し、ボーナス・ペナルティを計算 [cite: 150-154]
-func (s *service) ReportPlayResult(userID string, result PlayResult) (Motivation, error) {
+// ReportPlayResult (ボーナス・ペナルティロジック)
+func (s *service) ReportPlayResult(userID string, result PlayResult) (*Motivation, error) {
 	// 1. 現在のモチベーションを取得
-	m, err := s.repo.GetMotivationByUserID(userID)
+	motivation, err := s.repo.GetMotivationByUserID(userID)
 	if err != nil {
-		return m, err
+		return nil, err
 	}
 
-	// 2. 結果に応じてポイントを増減 (ロジック)
+	// 2. 結果に応じてポイントを増減 (仮のロジック) [cite: 77-78]
 	if result.Result == "success" {
-		[cite_start]m.Points += 10 // ボーナス [cite: 26]
+		motivation.Points += 10 // ボーナス
 	} else {
-		[cite_start]m.Points -= 5 // ペナルティ [cite: 25]
-		if m.Points < 0 {
-			m.Points = 0
-		}
+		motivation.Points -= 5 // ペナルティ
 	}
 
-	// 3. ランクを更新 (ロジック)
-	if m.Points > 100 {
-		m.Rank = "シルバー"
-	} else {
-		[cite_start]m.Rank = "ブロンズ" // [cite: 43]
-	}
-	m.Level = m.Points % 100 // (レベル = ポイントの100の剰余 とする)
+	// TODO: ポイントに応じてランクやレベルを更新するロジック
 
-	// 4. DBに保存
-	if err := s.repo.UpsertMotivation(m); err != nil {
-		return m, err
+	// 3. DBに保存
+	if err := s.repo.UpdateMotivation(motivation); err != nil {
+		return nil, err
 	}
-	return m, nil
+
+	// (TODO: taskRepoを使ってplay_sessions [cite: 96-101] にプレイ記録を保存する)
+
+	return motivation, nil
 }
