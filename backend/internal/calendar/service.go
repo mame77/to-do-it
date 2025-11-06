@@ -2,6 +2,8 @@ package calendar
 
 import (
 	"TO-DO-IT/internal/game" // 担当Cのゲームパッケージ (仮)
+	"fmt"
+	"strconv"
 	"time"
 )
 
@@ -36,28 +38,116 @@ func NewService(calRepo Repository, gameRepo game.Repository) Service {
 
 // GenerateSchedule (最重要ロジック)
 func (s *service) GenerateSchedule(userID string) ([]Schedule, error) {
-	// --- ここに自動生成アルゴリズムを実装します [cite: 71, 124] ---
+	// 1. ユーザーの「未開始」ゲームを取得 (固定UserID=1を使用)
+	games, err := s.gameRepo.GetGamesByUserID(1) // testUserID = 1
+	if err != nil {
+		return nil, err
+	}
 
-	// 1. 担当Cのリポジトリから、ユーザーの「未開始」ゲームを取得 [cite: 40]
-	// games, err := s.gameRepo.GetGamesByUserID(userID, "未開始")
-	// if err != nil { ... }
+	// 未開始のゲームのみをフィルタリング
+	var unstartedGames []*game.Game
+	for _, g := range games {
+		if g.Status == "unstarted" {
+			unstartedGames = append(unstartedGames, g)
+		}
+	}
 
-	// 2. このリポジトリから、ユーザーの「固定予定」を取得 [cite: 126, 131-132]
-	// fixedEvents, err := s.calendarRepo.GetFixedEventsByUserID(userID, time.Now(), time.Now().Add(7*24*time.Hour)) // 例えば1週間分
-	// if err != nil { ... }
+	if len(unstartedGames) == 0 {
+		return []Schedule{}, nil // 未開始ゲームがない場合は空を返す
+	}
 
-	// 3. 空き時間を計算する
-	// (固定予定を考慮して、ゲームをプレイできる時間帯を算出するロジック)
+	// 2. 今後1週間分の固定予定を取得
+	start := time.Now()
+	end := start.Add(7 * 24 * time.Hour)
+	fixedEvents, err := s.calendarRepo.GetFixedEventsByUserID(userID, start, end)
+	if err != nil {
+		return nil, err
+	}
 
-	// 4. 空き時間にゲームを割り当てる (仮のロジック)
+	// 3. スケジュールを生成（シンプルなアルゴリズム）
 	var newSchedules []Schedule
-	// ... (アルゴリズム) ...
-	// newSchedules = append(newSchedules, Schedule{...})
+	currentTime := start
 
-	// 5. 生成したスケジュールをDBに保存
-	// if err := s.calendarRepo.CreateSchedules(newSchedules); err != nil { ... }
+	for idx, g := range unstartedGames {
+		// 各ゲームに2時間のプレイ時間を割り当て
+		playDuration := 2 * time.Hour
+
+		// 固定予定と重ならない時間を探す
+		scheduleTime := findNextAvailableTime(currentTime, playDuration, fixedEvents)
+
+		// スケジュールを作成
+		schedule := Schedule{
+			ID:        generateScheduleID(idx),
+			UserID:    userID,
+			GameID:    strconv.Itoa(g.ID), // intをstringに変換
+			StartTime: scheduleTime,
+			EndTime:   scheduleTime.Add(playDuration),
+			Status:    "pending",
+		}
+		newSchedules = append(newSchedules, schedule)
+
+		// 次のスケジュールは現在のスケジュール終了後から
+		currentTime = schedule.EndTime
+	}
+
+	// 4. 生成したスケジュールをDBに保存
+	if len(newSchedules) > 0 {
+		if err := s.calendarRepo.CreateSchedules(newSchedules); err != nil {
+			return nil, err
+		}
+	}
 
 	return newSchedules, nil
+}
+
+// findNextAvailableTime は固定予定と重ならない次の利用可能な時間を見つける
+func findNextAvailableTime(startTime time.Time, duration time.Duration, fixedEvents []FixedEvent) time.Time {
+	proposedTime := startTime
+
+	// 営業時間内に調整（9:00-23:00）
+	proposedTime = adjustToBusinessHours(proposedTime)
+
+	for {
+		proposedEnd := proposedTime.Add(duration)
+		conflict := false
+
+		// 固定予定との衝突をチェック
+		for _, event := range fixedEvents {
+			if timeOverlaps(proposedTime, proposedEnd, event.StartTime, event.EndTime) {
+				conflict = true
+				// 固定予定の終了後に移動
+				proposedTime = event.EndTime
+				proposedTime = adjustToBusinessHours(proposedTime)
+				break
+			}
+		}
+
+		if !conflict {
+			return proposedTime
+		}
+	}
+}
+
+// timeOverlaps は2つの時間範囲が重なっているかチェック
+func timeOverlaps(start1, end1, start2, end2 time.Time) bool {
+	return start1.Before(end2) && end1.After(start2)
+}
+
+// adjustToBusinessHours は時間を営業時間内（9:00-23:00）に調整
+func adjustToBusinessHours(t time.Time) time.Time {
+	hour := t.Hour()
+
+	// 23時以降なら翌日9時に
+	if hour >= 23 || hour < 9 {
+		t = time.Date(t.Year(), t.Month(), t.Day()+1, 9, 0, 0, 0, t.Location())
+	}
+
+	return t
+}
+
+// generateScheduleID はユニークなスケジュールIDを生成
+func generateScheduleID(index int) string {
+	return fmt.Sprintf("sched_%s_%d_%d", time.Now().Format("20060102150405"), time.Now().Nanosecond(), index)
 }
 
 func (s *service) GetSchedules(userID string, start time.Time, end time.Time) ([]Schedule, error) {

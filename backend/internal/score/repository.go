@@ -16,15 +16,37 @@ func NewRepository(db *sql.DB) Repository {
 }
 
 func (r *postgresRepository) GetMotivationByUserID(userID string) (*Motivation, error) {
-	// TODO: DBからユーザーのモチベーション情報を取得 [cite: 79]
-	// SELECT points, rank, level FROM user_motivation WHERE user_id = $1
-	motivation := &Motivation{UserID: userID}
-	// ... (db.QueryRowContext...)
+	query := `SELECT user_id, points, rank, level FROM motivation WHERE user_id = ?`
+
+	motivation := &Motivation{}
+	err := r.db.QueryRow(query, userID).Scan(&motivation.UserID, &motivation.Points, &motivation.Rank, &motivation.Level)
+
+	if err == sql.ErrNoRows {
+		// ユーザーのモチベーション情報が存在しない場合、初期値を作成
+		motivation = &Motivation{
+			UserID: userID,
+			Points: 0,
+			Rank:   "Bronze",
+			Level:  1,
+		}
+		// DBに初期値を挿入
+		insertQuery := `INSERT INTO motivation (user_id, points, rank, level) VALUES (?, ?, ?, ?)`
+		_, err := r.db.Exec(insertQuery, motivation.UserID, motivation.Points, motivation.Rank, motivation.Level)
+		if err != nil {
+			return nil, err
+		}
+		return motivation, nil
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
 	return motivation, nil
 }
 
 func (r *postgresRepository) UpdateMotivation(motivation *Motivation) error {
-	// TODO: DBのモチベーション情報を更新 [cite: 77-78]
-	// UPDATE user_motivation SET points = $1, rank = $2, level = $3 WHERE user_id = $4
-	return nil
+	query := `UPDATE motivation SET points = ?, rank = ?, level = ? WHERE user_id = ?`
+	_, err := r.db.Exec(query, motivation.Points, motivation.Rank, motivation.Level, motivation.UserID)
+	return err
 }

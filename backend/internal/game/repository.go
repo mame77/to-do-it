@@ -2,7 +2,8 @@ package game
 
 import (
 	"database/sql"
-	"log" // エラー確認用
+	"log"
+	"time"
 )
 
 // Repository は、game データの永続化（DB操作）に関するインターフェースです。
@@ -31,18 +32,19 @@ func NewRepository(db *sql.DB) Repository {
 // CreateGame は新しいゲームをDBに作成します。作成したゲームのIDを返します。
 func (r *repository) CreateGame(game *Game) (int, error) {
 	// 認証なしの暫定対応として、game.UserID はサービス層で設定済みと仮定
-	query := `INSERT INTO games (user_id, title, platform, genre, release_date, created_at, updated_at)
-			  VALUES (?, ?, ?, ?, ?, ?, ?)`
-	
+	query := `INSERT INTO games (user_id, title, platform, genre, status, release_date, created_at, updated_at)
+			  VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+
 	// Go 1.22以降なら time.Now() でOK。それ以前なら time.Now().UTC() などDBの型に合わせる
-	now := time.Now() 
-	
-	result, err := r->db.Exec(query, 
-		game.UserID, 
-		game.Title, 
-		game.Platform, 
-		game.Genre, 
-		game.ReleaseDate, 
+	now := time.Now()
+
+	result, err := r.db.Exec(query,
+		game.UserID,
+		game.Title,
+		game.Platform,
+		game.Genre,
+		game.Status,
+		game.ReleaseDate,
 		now, // CreatedAt
 		now, // UpdatedAt
 	)
@@ -62,16 +64,17 @@ func (r *repository) CreateGame(game *Game) (int, error) {
 
 // GetGameByID は ID でゲームを1件取得します。
 func (r *repository) GetGameByID(id int) (*Game, error) {
-	query := `SELECT id, user_id, title, platform, genre, release_date, created_at, updated_at 
+	query := `SELECT id, user_id, title, platform, genre, status, release_date, created_at, updated_at
 			  FROM games WHERE id = ?`
-	
+
 	var game Game
-	err := r->db.QueryRow(query, id).Scan(
+	err := r.db.QueryRow(query, id).Scan(
 		&game.ID,
 		&game.UserID,
 		&game.Title,
 		&game.Platform,
 		&game.Genre,
+		&game.Status,
 		&game.ReleaseDate,
 		&game.CreatedAt,
 		&game.UpdatedAt,
@@ -90,10 +93,10 @@ func (r *repository) GetGameByID(id int) (*Game, error) {
 
 // GetGamesByUserID は、指定されたユーザーのゲーム一覧を取得します。
 func (r *repository) GetGamesByUserID(userID int) ([]*Game, error) {
-	query := `SELECT id, user_id, title, platform, genre, release_date, created_at, updated_at 
+	query := `SELECT id, user_id, title, platform, genre, status, release_date, created_at, updated_at
 			  FROM games WHERE user_id = ? ORDER BY created_at DESC`
 
-	rows, err := r->db.Query(query, userID)
+	rows, err := r.db.Query(query, userID)
 	if err != nil {
 		log.Printf("Error querying games by user ID: %v", err)
 		return nil, err
@@ -109,6 +112,7 @@ func (r *repository) GetGamesByUserID(userID int) ([]*Game, error) {
 			&game.Title,
 			&game.Platform,
 			&game.Genre,
+			&game.Status,
 			&game.ReleaseDate,
 			&game.CreatedAt,
 			&game.UpdatedAt,
@@ -124,13 +128,14 @@ func (r *repository) GetGamesByUserID(userID int) ([]*Game, error) {
 
 // UpdateGame はゲーム情報を更新します。
 func (r *repository) UpdateGame(game *Game) error {
-	query := `UPDATE games SET title = ?, platform = ?, genre = ?, release_date = ?, updated_at = ?
+	query := `UPDATE games SET title = ?, platform = ?, genre = ?, status = ?, release_date = ?, updated_at = ?
 			  WHERE id = ?`
-	
-	_, err := r->db.Exec(query,
+
+	_, err := r.db.Exec(query,
 		game.Title,
 		game.Platform,
 		game.Genre,
+		game.Status,
 		game.ReleaseDate,
 		time.Now(), // UpdatedAt
 		game.ID,
@@ -146,7 +151,7 @@ func (r *repository) UpdateGame(game *Game) error {
 func (r *repository) DeleteGame(id int) error {
 	query := `DELETE FROM games WHERE id = ?`
 	
-	_, err := r->db.Exec(query, id)
+	_, err := r.db.Exec(query, id)
 	if err != nil {
 		log.Printf("Error deleting game: %v", err)
 	}

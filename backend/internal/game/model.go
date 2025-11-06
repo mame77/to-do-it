@@ -9,6 +9,7 @@ type Game struct {
 	Title       string    `json:"title" binding:"required"`
 	Platform    string    `json:"platform"`
 	Genre       string    `json:"genre"`
+	Status      string    `json:"status"`  // unstarted, playing, completed
 	ReleaseDate time.Time `json:"release_date"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
@@ -17,16 +18,18 @@ type Game struct {
 // CreateGameRequest は、ゲーム作成時のリクエストボディです。
 type CreateGameRequest struct {
 	// UserIDを削除（serviceで固定値を入れるため）
-	Title    string    `json:"title" binding:"required"`
-	Platform string    `json:"platform"`
-	Genre    string    `json:"genre"`
+	Title       string    `json:"title" binding:"required"`
+	Platform    string    `json:"platform"`
+	Genre       string    `json:"genre"`
+	Status      string    `json:"status"`
 	ReleaseDate time.Time `json:"release_date"`
 }
 
 // UpdateGameRequest は、ゲーム更新時のリクエストボディです。
 type UpdateGameRequest struct {
-	Title    string    `json:"title"`
-	Platform string    `json:"platform"`
-	Genre    string    `json:"genre"`
+	Title       string    `json:"title"`
+	Platform    string    `json:"platform"`
+	Genre       string    `json:"genre"`
+	Status      string    `json:"status"`
 	ReleaseDate time.Time `json:"release_date"`
 }
