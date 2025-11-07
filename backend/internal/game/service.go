@@ -2,7 +2,6 @@ package game
 
 import (
 	"log"
-	"time"
 )
 
 // testUserID は認証をスキップするための仮のユーザーID
@@ -35,11 +34,16 @@ func NewService(repo Repository) Service {
 // CreateGame は新しいゲームを作成します。
 func (s *service) CreateGame(req *CreateGameRequest) (*Game, error) {
 	// リクエスト(Request)からDBモデル(Game)へ変換
+	status := req.Status
+	if status == "" {
+		status = "unstarted" // デフォルト値
+	}
 	game := &Game{
 		UserID:      testUserID, // ★認証の代わりに固定IDを設定
 		Title:       req.Title,
 		Platform:    req.Platform,
 		Genre:       req.Genre,
+		Status:      status,
 		ReleaseDate: req.ReleaseDate,
 		// CreatedAt/UpdatedAt は repository 層のSQLで設定
 	}
@@ -112,10 +116,21 @@ func (s *service) UpdateGame(id int, req *UpdateGameRequest) (*Game, error) {
 	// 2. リクエスト(req)の内容で、取得した game オブジェクトを更新
 	// ※リクエストで値が省略された場合（例：Title=""）にどうするかは要件次第
 	// ここでは単純に上書きする
-	game.Title = req.Title
-	game.Platform = req.Platform
-	game.Genre = req.Genre
-	game.ReleaseDate = req.ReleaseDate
+	if req.Title != "" {
+		game.Title = req.Title
+	}
+	if req.Platform != "" {
+		game.Platform = req.Platform
+	}
+	if req.Genre != "" {
+		game.Genre = req.Genre
+	}
+	if req.Status != "" {
+		game.Status = req.Status
+	}
+	if !req.ReleaseDate.IsZero() {
+		game.ReleaseDate = req.ReleaseDate
+	}
 	// UpdatedAt は repository 層で更新
 
 	// 3. DBを更新
@@ -146,3 +161,4 @@ func (s *service) DeleteGame(id int) error {
 
 	// 2. 削除実行
 	return s.repo.DeleteGame(id)
+}

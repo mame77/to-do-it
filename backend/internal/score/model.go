@@ -1,5 +1,4 @@
 package score
-package score
 
 // Motivation (継続状態) [cite: 79, 145, 147]
 // ユーザーの現在のポイントやランク
