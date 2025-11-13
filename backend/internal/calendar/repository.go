@@ -1,62 +1,67 @@
 package calendar
 
-// Repository はデータ永続化層へのインターフェースを定義します。
-// 実際にはデータベースや外部ストレージへの接続コードが含まれます。
+import (
+	"database/sql"
+	"time"
+)
+
+// Repository (インターフェース)
 type Repository interface {
-	// Game
-	GetGamesToSchedule() ([]Game, error)
-	GetGameByID(id string) (*Game, error)
+	// 固定予定 (FixedEvent)
+	GetFixedEventsByUserID(userID string, start time.Time, end time.Time) ([]FixedEvent, error)
+	CreateFixedEvent(event *FixedEvent) error
+	// ... (UpdateFixedEvent, DeleteFixedEvent も必要) [cite: 83-84]
 
-	// Fixed Event
-	GetAllFixedEvents() ([]FixedEvent, error)
-
-	// Schedule
-	SaveSchedules(schedules []Schedule) error
-	UpdateScheduleStatus(id string, completed bool, skipped bool) error
+	// スケジュール (Schedule)
+	GetSchedulesByUserID(userID string, start time.Time, end time.Time) ([]Schedule, error)
+	CreateSchedules(schedules []Schedule) error
+	UpdateScheduleStatus(scheduleID string, status string) error // [cite: 73]
 }
 
-// NewRepository は実際のRepository実装を初期化して返します。
-// (ここではダミーの実装を返す)
-func NewRepository() Repository {
-	return &mockRepository{} // 開発用モックまたは実際のDB実装
+// postgresRepository (実装)
+type postgresRepository struct {
+	db *sql.DB
 }
 
-// --- ダミーのRepository実装 (開発・テスト用) ---
-type mockRepository struct{}
-
-func (r *mockRepository) GetGamesToSchedule() ([]Game, error) {
-	// ダミーデータ: 未完了かプレイ中のゲーム
-	return []Game{
-		{ID: "g1", Title: "ゼルダの伝説", Status: StatusPlaying, AddedAt: "2024-01-01T00:00:00Z"},
-		{ID: "g2", Title: "ファイナルファンタジーXIV", Status: StatusPlaying, AddedAt: "2024-02-01T00:00:00Z"},
-	}, nil
+// NewRepository ... DB接続を受け取り、リポジトリを初期化
+func NewRepository(db *sql.DB) Repository {
+	return &postgresRepository{db: db}
 }
 
-func (r *mockRepository) GetGameByID(id string) (*Game, error) {
-	// IDに基づいたゲーム取得ロジック
-	return &Game{ID: id, Title: "テストゲーム", Status: StatusPlaying, AddedAt: "2024-01-01T00:00:00Z"}, nil
+// --- 固定予定 (FixedEvent) の実装 ---
+
+func (r *postgresRepository) GetFixedEventsByUserID(userID string, start time.Time, end time.Time) ([]FixedEvent, error) {
+	// TODO: DBから固定予定を取得するSQLクエリを実装
+	// SELECT * FROM fixed_events WHERE user_id = $1 AND start_time < $2 AND end_time > $3
+	var events []FixedEvent
+	// ... (db.QueryContext...)
+	return events, nil
 }
 
-func (r *mockRepository) GetAllFixedEvents() ([]FixedEvent, error) {
-	// ダミーデータ: 毎週月水金の仕事
-	return []FixedEvent{
-		{
-			ID: "fe1",
-			Title: "仕事",
-			DayOfWeek: []int{1, 3, 5}, // 月水金
-			StartTime: "09:00",
-			EndTime: "18:00",
-			IsRecurring: true,
-		},
-	}, nil
-}
-
-func (r *mockRepository) SaveSchedules(schedules []Schedule) error {
-	// スケジュールを保存するダミーロジック
+func (r *postgresRepository) CreateFixedEvent(event *FixedEvent) error {
+	// TODO: DBに固定予定を保存するSQLクエリを実装 [cite: 81]
+	// INSERT INTO fixed_events (...) VALUES (...)
 	return nil
 }
 
-func (r *mockRepository) UpdateScheduleStatus(id string, completed bool, skipped bool) error {
-	// スケジュールステータスを更新するダミーロジック
+// --- スケジュール (Schedule) の実装 ---
+
+func (r *postgresRepository) GetSchedulesByUserID(userID string, start time.Time, end time.Time) ([]Schedule, error) {
+	// TODO: DBから生成済みスケジュールを取得するSQLクエリを実装 [cite: 72]
+	// SELECT * FROM schedules WHERE user_id = $1 AND start_time < $2 AND end_time > $3
+	var schedules []Schedule
+	// ... (db.QueryContext...)
+	return schedules, nil
+}
+
+func (r *postgresRepository) CreateSchedules(schedules []Schedule) error {
+	// TODO: DBに複数のスケジュールを保存するSQLクエリを実装 (トランザクション推奨)
+	// INSERT INTO schedules (...) VALUES (...)
+	return nil
+}
+
+func (r *postgresRepository) UpdateScheduleStatus(scheduleID string, status string) error {
+	// TODO: DBのスケジュールステータスを更新するSQLクエリを実装 [cite: 73]
+	// UPDATE schedules SET status = $1 WHERE id = $2
 	return nil
 }

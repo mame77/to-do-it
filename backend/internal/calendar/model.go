@@ -1,58 +1,24 @@
 package calendar
 
-// --- Core Data Models (Frontend types/index.ts に対応) ---
+import "time"
 
-// PlayStatus はゲームのプレイ状態を示します。
-type PlayStatus string
-
-const (
-	StatusUnstarted PlayStatus = "unstarted"
-	StatusPlaying   PlayStatus = "playing"
-	StatusCompleted PlayStatus = "completed"
-)
-
-// Game はユーザーが登録したゲームの情報を保持します。
-type Game struct {
-	ID      string     `json:"id"`
-	Title   string     `json:"title"`
-	Genre   string     `json:"genre,omitempty"` // GameGenreに対応
-	Status  PlayStatus `json:"status"`
-	AddedAt string     `json:"addedAt"` // ISO 8601形式の日時
-}
-
-// Schedule はゲームのプレイ予定を保持します。
-type Schedule struct {
-	ID        string `json:"id"`
-	GameID    string `json:"gameId"`
-	Date      string `json:"date"`      // YYYY-MM-DD形式
-	StartTime string `json:"startTime"` // HH:MM形式
-	EndTime   string `json:"endTime"`   // HH:MM形式
-	Completed bool   `json:"completed"`
-	Skipped   bool   `json:"skipped"`
-}
-
-// FixedEvent は定期的な予定や特定の日の固定された予定を保持します。
+// FixedEvent (固定予定) [cite: 56-58, 81]
+// ユーザーが手動で登録する、スケジュール自動生成時に考慮すべき予定（仕事、授業など）
 type FixedEvent struct {
-	ID            string `json:"id"`
-	Title         string `json:"title"`
-	DayOfWeek     []int  `json:"dayOfWeek"` // 0-6 (日-土)
-	StartTime     string `json:"startTime"`
-	EndTime       string `json:"endTime"`
-	IsRecurring   bool   `json:"isRecurring"`
-	SpecificDate  string `json:"specificDate,omitempty"` // YYYY-MM-DD形式
+	ID        string    `json:"id"`
+	UserID    string    `json:"user_id"`    // どのユーザーの予定か
+	Title     string    `json:"title"`      // "授業", "仕事" など
+	StartTime time.Time `json:"start_time"` // 開始日時
+	EndTime   time.Time `json:"end_time"`   // 終了日時
 }
 
-
-// --- Request/Response Models (HandlerとService間で利用) ---
-
-// GenerateScheduleRequest はスケジュール生成に必要なパラメータを定義します。
-type GenerateScheduleRequest struct {
-	StartDate      string `json:"startDate"` // YYYY-MM-DD
-	DaysToSchedule int    `json:"daysToSchedule"`
-}
-
-// ScheduleActionRequest はスケジュールの完了・スキップに必要なパラメータを定義します。
-type ScheduleActionRequest struct {
-	ScheduleID string `json:"scheduleId"`
-	Action     string `json:"action"` // "complete" or "skip"
+// Schedule (自動生成されたゲームスケジュール) [cite: 72, 96-101]
+// 自動生成APIによって作られる「いつ、どのゲームをプレイするか」の予定
+type Schedule struct {
+	ID        string    `json:"id"`
+	UserID    string    `json:"user_id"`
+	GameID    string    `json:"game_id"`    // プレイするゲームのID (gameパッケージと連携)
+	StartTime time.Time `json:"start_time"` // プレイ開始予定時刻
+	EndTime   time.Time `json:"end_time"`   // プレイ終了予定時刻
+	Status    string    `json:"status"`     // "予定", "完了", "スキップ" [cite: 48, 73]
 }
